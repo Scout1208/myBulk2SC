@@ -14,8 +14,8 @@ class GaussianMixtureVAE(nn.Module):
         # Encoder
         self.fc0 = nn.Linear(input_dim, hidden_dim//2)
         self.fc1 = nn.Linear(hidden_dim//2, hidden_dim)
-        self.fc21 = nn.Linear(hidden_dim, n_components * latent_dim)  # mu layer
-        self.fc22 = nn.Linear(hidden_dim, n_components * latent_dim)  # logvar layer
+        self.fc_mu = nn.Linear(hidden_dim, n_components * latent_dim)  # mu layer
+        self.fc_logvar = nn.Linear(hidden_dim, n_components * latent_dim)  # logvar layer
         # Mixture weights
         self.fc_pi = nn.Linear(hidden_dim, n_components)
 
@@ -40,8 +40,8 @@ class GaussianMixtureVAE(nn.Module):
         h1 = F.relu(self.fc1(h0))
         h1 = self.dropout(h1)
 
-        mu = self.fc21(h1)  # Shape: (latent_dim)
-        logvar = self.fc22(h1)  # Shape: (latent_dim)
+        mu = self.fc_mu(h1)  # Shape: (latent_dim)
+        logvar = self.fc_logvar(h1)  # Shape: (latent_dim)
 
         logits = self.fc_pi(h1)  # These are logits for the softmax
         logits = logits - logits.max(dim=-1, keepdim=True).values  # Normalize for numerical stability
