@@ -1,4 +1,5 @@
 import scanpy as sc
+import pandas as pd
 
 # Step 1. 讀取資料 
 adata = sc.read_10x_mtx(
@@ -6,6 +7,9 @@ adata = sc.read_10x_mtx(
     var_names='gene_symbols',            # 或使用 'gene_ids' 根據檔案內容選擇
     cache=True                           # 可加速重複讀取
 )
+
+# 確保基因名稱唯一
+adata.var_names_make_unique()
 
 # Step 2. 基本篩選: 篩選細胞與基因
 sc.pp.filter_cells(adata, min_genes=200)   # 篩選至少偵測到200個基因的細胞
@@ -40,7 +44,7 @@ sc.tl.leiden(adata, resolution=0.5)
 sc.tl.umap(adata)
 sc.pl.umap(adata, color=['leiden'], save='_leiden_clusters.png')
 
-#Find marker genes
+# Find marker genes
 sc.tl.rank_genes_groups(adata, 'leiden', method='t-test')
 sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False, save='_rank_genes_t.png')
 sc.tl.rank_genes_groups(adata, "leiden", method="wilcoxon")

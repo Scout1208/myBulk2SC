@@ -8,14 +8,18 @@ source("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/R/sct
 ### Part 1: 基於 myData 的基本前處理與個別細胞細胞類型得分計算
 
 # 1. 從 .mtx 檔案讀取 myData 數據（需同時提供 barcodes 與 features 檔案）
-expr_matrix <- readMM("/Group16T/common/lcy/dslab_lcy/bulk2sc/B2SC/myData2_2/matrix.mtx")
-barcodes <- read.delim("/Group16T/common/lcy/dslab_lcy/bulk2sc/B2SC/myData2_2/barcodes.tsv", 
+expr_matrix <- readMM("/Group16T/common/lcy/dslab_lcy/GitRepo/myBulk2SC/raw_gene_bc_matrices/hg19/matrix.mtx")
+barcodes <- read.delim("/Group16T/common/lcy/dslab_lcy/GitRepo/myBulk2SC/raw_gene_bc_matrices/hg19/barcodes.tsv", 
                        header = FALSE, stringsAsFactors = FALSE)
-features <- read.delim("/Group16T/common/lcy/dslab_lcy/bulk2sc/B2SC/myData2_2/genes.tsv", 
+features <- read.delim("/Group16T/common/lcy/dslab_lcy/GitRepo/myBulk2SC/raw_gene_bc_matrices/hg19/genes.tsv", 
                        header = FALSE, stringsAsFactors = FALSE)
 
 # 指定矩陣的行名稱與列名稱
 # 假設 features 檔案第二欄為基因名稱，barcodes 檔案第一欄為細胞條碼
+# 添加一個後綴來確保基因名稱唯一
+features$V2 <- make.unique(features$V2)
+
+# 再次設定 rownames
 rownames(expr_matrix) <- features$V2  
 colnames(expr_matrix) <- barcodes$V1
 
@@ -101,14 +105,14 @@ for(j in unique(sctype_scores$cluster)){
 
 # 以細胞類型標註結果繪製 UMAP
 DimPlot(seurat_obj, reduction = "umap", label = TRUE, repel = TRUE, group.by = 'customclassif')
-png("/Group16T/common/lcy/dslab_lcy/bulk2sc/B2SC/myData2_2/scRNA_UMAP.png", width=1000, height=800)
+png("/Group16T/common/lcy/dslab_lcy/GitRepo/myBulk2SC/raw_gene_bc_matrices/hg19/scRNA_UMAP.png", width=1000, height=800)
 DimPlot(seurat_obj, reduction = "umap", label = TRUE, repel = TRUE, group.by = 'customclassif')
 dev.off()
 # 輸出條碼與細胞類型對應表（CSV 與 TSV 格式）
 mapping <- data.frame(Barcode = rownames(seurat_obj@meta.data), 
                       CellType = seurat_obj@meta.data$customclassif)
 head(mapping)
-write.table(mapping, file = "/Group16T/common/lcy/dslab_lcy/bulk2sc/B2SC/myData2_2/barcode_to_celltype.csv", sep = ",", 
+write.table(mapping, file = "/Group16T/common/lcy/dslab_lcy/GitRepo/myBulk2SC/raw_gene_bc_matrices/hg19/barcode_to_celltype.csv", sep = ",", 
             row.names = FALSE, quote = FALSE)
-write.table(mapping, file = "/Group16T/common/lcy/dslab_lcy/bulk2sc/B2SC/myData2_2/barcode_to_celltype.tsv", sep = "\t", 
+write.table(mapping, file = "/Group16T/common/lcy/dslab_lcy/GitRepo/myBulk2SC/raw_gene_bc_matrices/hg19/barcode_to_celltype.tsv", sep = "\t", 
             row.names = FALSE, quote = FALSE)
