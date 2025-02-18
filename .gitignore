@@ -1,0 +1,13 @@
+.RData
+.Rhistory
+/__pycache__
+/cache
+/figures
+/filtered_gene_bc_matrices
+/myData
+/myData2
+/myData2_2
+/raw_gene_bc_matrices
+/saved_files
+/adata_preprocessed.h5ad
+/Rplots.pdf
