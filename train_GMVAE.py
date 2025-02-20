@@ -3,7 +3,7 @@ import numpy as np
 import umap
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
-import os
+
 
 
 def zinb_loss(y_true, y_pred, pi, r, eps=1e-10):
@@ -57,8 +57,6 @@ def train_GMVAE(model, epoch, dataloader, optimizer, proportion_tensor, kl_weigh
         print(f'Epoch: {epoch+1} KL Loss: {loss_kl:.4f} Recon Loss: {loss_recon:.4f} Total Loss: {total_loss:.4f} Fraction Loss: {fraction_loss:.4f} ZINB Loss: {zinb_loss_val:.4f}')
 
     if (epoch+1) % 100 == 0:
-        save_dir = "saved_files"
-        os.makedirs(save_dir, exist_ok=True)
         # Save reconstructed.
         torch.save(reconstructed, 'saved_files/GMVAE_reconstructed.pt')
 

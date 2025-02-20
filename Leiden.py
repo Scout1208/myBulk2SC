@@ -3,7 +3,7 @@ import pandas as pd
 
 # Step 1. 讀取資料 
 adata = sc.read_10x_mtx(
-    '/Group16T/common/lcy/dslab_lcy/bulk2sc/B2SC/myData/',  # 根據實際路徑修改
+    '/Group16T/common/lcy/dslab_lcy/GitRepo/B2SC/raw_gene_bc_matrices/hg19/',  # 根據實際路徑修改
     var_names='gene_symbols',            # 或使用 'gene_ids' 根據檔案內容選擇
     cache=True                           # 可加速重複讀取
 )
@@ -38,7 +38,7 @@ sc.tl.pca(adata, svd_solver='arpack')
 sc.pp.neighbors(adata, n_neighbors=10, n_pcs=40)
 
 # Step 9. 使用 Leiden 方法進行分群 (可以調整 resolution 參數以影響分群數目)
-sc.tl.leiden(adata, resolution=0.5)
+sc.tl.leiden(adata, resolution=0.8)
 
 # Step 10. UMAP 降維視覺化
 sc.tl.umap(adata)

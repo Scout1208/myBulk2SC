@@ -69,7 +69,7 @@ DimPlot(seurat_obj, reduction = "umap")
 
 # 讀取完整數據庫並設定組織類型（以 "Liver" 為例，此處可依實際需求修改）
 db_ <- "https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/ScTypeDB_full.xlsx"
-tissue <- "Liver"
+tissue <- "Immune system"
 gs_list <- gene_sets_prepare(db_, tissue)
 
 # 取得聚類後 Seurat 物件中標準化後的數據矩陣
