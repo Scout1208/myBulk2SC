@@ -69,7 +69,6 @@ DimPlot(pbmc, reduction = "umap")
 #===========================================
 # 載入完整資料庫檔案 (ScTypeDB_full.xlsx) 與設定組織類型（使用 command line 參數 tissue）
 db_ = "https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/ScTypeDB_full.xlsx"
-# tissue 參數已從 command line 讀入
 gs_list = gene_sets_prepare(db_, tissue)
 
 # 取得 Seurat 物件中 RNA 資料經縮放後的矩陣
@@ -101,45 +100,81 @@ for(j in unique(sctype_scores$cluster)){
 }
 
 #===========================================
-# 5. 自訂顏色並將 UMAP 圖依據自訂 mapping 進行上色
+# 5. 擴增顏色對應表並依據細胞類型選擇對應的 color map
 #===========================================
-custom_colors <- c(
-  "Naive B cells" = "red", 
-  "Non-classical monocytes" = "black", 
-  "Classical Monocytes" = "orange", 
-  "Natural killer  cells" = "cyan",
-  "CD8+ NKT-like cells" = "pink", 
-  "Memory CD4+ T cells" = "magenta", 
-  "Naive CD8+ T cells" = "blue", 
-  "Platelets" = "yellow", 
-  "Pre-B cells" = "cornflowerblue",
-  "Plasmacytoid Dendritic cells" = "lime", 
-  "Effector CD4+ T cells" = "grey", 
-  "Macrophages" = "tan", 
-  "Myeloid Dendritic cells" = "green",
-  "Effector CD8+ T cells" = "brown", 
-  "Plasma B cells" = "purple", 
-  "Memory B cells" = "darkred", 
-  "Naive CD4+ T cells" = "darkblue",
-  "Progenitor cells" = "darkgreen", 
-  "γδ-T cells" = "darkcyan", 
-  "Eosinophils" = "darkolivegreen", 
-  "Neutrophils" = "darkorchid", 
-  "Basophils" = "darkred",
-  "Mast cells" = "darkseagreen", 
-  "Intermediate monocytes" = "darkslateblue", 
-  "Megakaryocyte" = "darkslategrey", 
-  "Endothelial" = "darkturquoise",
-  "Erythroid-like and erythroid precursor cells" = "darkviolet", 
-  "HSC/MPP cells" = "deeppink", 
-  "Granulocytes" = "deepskyblue",
-  "ISG expressing immune cells" = "dimgray", 
-  "Cancer cells" = "dodgerblue", 
-  "Memory CD8+ T cells" = "darkkhaki", 
-  "Pro-B cells" = "darkorange",
-  "Immature B cells" = "darkgoldenrod"
+EXTENDED_COLOR_MAPS <- list(
+  Immune = c(
+    'Naive B cells' = 'red', 
+    'Non-classical monocytes' = 'black', 
+    'Classical Monocytes' = 'orange', 
+    'Natural killer  cells' = 'cyan',
+    'CD8+ NKT-like cells' = 'pink', 
+    'Memory CD4+ T cells' = 'magenta', 
+    'Naive CD8+ T cells' = 'blue', 
+    'Platelets' = 'yellow', 
+    'Pre-B cells' = 'cornflowerblue',
+    'Plasmacytoid Dendritic cells' = 'lime', 
+    'Effector CD4+ T cells' = 'grey', 
+    'Macrophages' = 'tan', 
+    'Myeloid Dendritic cells' = 'green',
+    'Effector CD8+ T cells' = 'brown', 
+    'Plasma B cells' = 'purple', 
+    "Memory B cells" = "darkred", 
+    "Naive CD4+ T cells" = "darkblue",
+    'Progenitor cells' = 'darkgreen', 
+    'γδ-T cells' = 'darkcyan', 
+    'Eosinophils' = 'darkolivegreen', 
+    'Neutrophils' = 'darkorchid',
+    'Basophils' = 'darkred', 
+    'Mast cells' = 'darkseagreen', 
+    'Intermediate monocytes' = 'darkslateblue', 
+    'Megakaryocyte' = 'darkslategrey',
+    'Endothelial' = 'darkturquoise', 
+    'Erythroid-like and erythroid precursor cells' = 'darkviolet', 
+    'HSC/MPP cells' = 'deeppink',
+    'Granulocytes' = 'deepskyblue', 
+    'ISG expressing immune cells' = 'dimgray', 
+    'Cancer cells' = 'dodgerblue', 
+    'Memory CD8+ T cells' = 'darkkhaki',
+    'Pro-B cells' = 'darkorange', 
+    'Immature B cells' = 'darkgoldenrod'
+  ),
+  Liver = c(
+    'Hepatocytes' = 'maroon',
+    'Cholangiocytes' = 'gold',
+    'Hepatic Stellate Cells' = 'olive',
+    'Kupffer Cells' = 'teal',
+    'Liver Sinusoidal Endothelial Cells' = 'navy',
+    'Portal Fibroblasts' = 'coral',
+    'Central Vein Endothelial Cells' = 'purple',
+    'Periportal Hepatocytes' = 'sienna',
+    'Pericentral Hepatocytes' = 'chocolate',
+    'Biliary Epithelial Cells' = 'peru',
+    'Liver Progenitor Cells' = 'crimson',
+    'Unknown' = 'black'
+  ),
+  Leiden = c(
+    "0" = "#e6194b", "1" = "#3cb44b", "2" = "#ffe119", "3" = "#0082c8", "4" = "#f58231", 
+    "5" = "#911eb4", "6" = "#46f0f0", "7" = "#f032e6", "8" = "#d2f53c", "9" = "#fabebe", 
+    "10" = "#008080", "11" = "#e6beff", "12" = "#aa6e28", "13" = "#fffac8", "14" = "#800000", 
+    "15" = "#aaffc3", "16" = "#808000", "17" = "#ffd8b1", "18" = "#000080", "19" = "#808080", 
+    "20" = "#FFFFFF", "21" = "#000000", "22" = "#1f78b4", "23" = "#33a02c", "24" = "#fb9a99", 
+    "25" = "#e31a1c", "26" = "#fdbf6f", "27" = "#ff7f00", "28" = "#cab2d6", "29" = "#6a3d9a", 
+    "30" = "#ffff99"
+  )
 )
 
+# 根據 command line 輸入的 tissue 選擇對應的 color map
+if(grepl("Immune", tissue, ignore.case = TRUE)){
+  custom_colors <- EXTENDED_COLOR_MAPS$Immune
+} else if(grepl("Liver", tissue, ignore.case = TRUE)){
+  custom_colors <- EXTENDED_COLOR_MAPS$Liver
+} else {
+  # 若 tissue 不符合上述條件，預設採用 Leiden 的 color map
+  custom_colors <- EXTENDED_COLOR_MAPS$Leiden
+}
+
+# 使用 DimPlot 並利用 cols 參數依據 customclassif 上色
 DimPlot(pbmc, reduction = "umap", label = TRUE, repel = TRUE, 
         group.by = 'customclassif', cols = custom_colors)
 
