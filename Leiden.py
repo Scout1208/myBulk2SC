@@ -19,6 +19,7 @@ sc.pp.filter_genes(adata, min_cells=3)       # 篩選至少在3個細胞中表�
 adata.var['mt'] = adata.var_names.str.startswith('MT-')
 sc.pp.calculate_qc_metrics(adata, qc_vars=['mt'], inplace=True)
 # 篩選出線粒體基因比例低於 5% 的細胞
+adata = adata[adata.obs.n_genes_by_counts < 2500, :]
 adata = adata[adata.obs.pct_counts_mt < 5, :].copy()
 
 # Step 4. 正規化與對數轉換
@@ -52,4 +53,16 @@ sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False, save='_rank_genes_wil.p
 sc.tl.rank_genes_groups(adata, "leiden", method="logreg", max_iter=1000)
 sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False, save='_rank_genes_log.png')
 
-adata.write('adata_preprocessed.h5ad')
+## ===== 修改處開始 =====
+## 新增：建立條碼與細胞型態對應表 (barcode_to_celltype.csv)
+## 此處 CellType 採用 Leiden 分群結果，如有需要可根據其他註釋方法進行修改
+mapping = pd.DataFrame({
+    'Barcode': adata.obs_names,       # 條碼資訊來自於 adata.obs 的索引
+    'CellType': adata.obs['leiden']     # 細胞型態以 Leiden 分群結果表示
+})
+# 儲存為 CSV 檔案，檔名與路徑與 scType.R 保持一致
+mapping.to_csv('/Group16T/common/lcy/dslab_lcy/GitRepo/myBulk2SC/raw_gene_bc_matrices/hg19/barcode_to_celltype_Leiden.csv', index=False)
+## ===== 修改處結束 =====
+
+# 儲存預處理後的 AnnData 物件
+adata.write('/Group16T/common/lcy/dslab_lcy/GitRepo/myBulk2SC/raw_gene_bc_matrices/hg19/adata_preprocessed.h5ad')
