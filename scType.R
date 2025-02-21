@@ -1,4 +1,14 @@
 #===========================================
+# 0. 讀取 command line 參數，指定細胞特異性基因集
+#===========================================
+args <- commandArgs(trailingOnly = TRUE)
+if(length(args) == 0){
+  stop("請提供細胞特異性基因集，例如: 'Immune system' 或 'Liver'")
+}
+tissue <- args[1]
+cat("使用細胞特異性基因集: ", tissue, "\n")
+
+#===========================================
 # 1. 載入必要套件與函數
 #===========================================
 lapply(c("dplyr", "Seurat", "HGNChelper", "openxlsx"), library, character.only = TRUE)
@@ -10,9 +20,9 @@ source("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/R/sct
 #===========================================
 # 2. 使用範例資料進行 sc-type 細胞型態打分
 #===========================================
-# 從內建資料庫取得細胞型態特異性基因集（以 "Immune system" 為例）
+# 從內建資料庫取得細胞型態特異性基因集，根據 command line 參數設定 (例如 "Immune system" 或 "Liver")
 gs_list = gene_sets_prepare("https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/ScTypeDB_short.xlsx", 
-                             "Immune system")
+                             tissue)
 
 # 讀取範例 scRNA-seq 矩陣資料
 scRNAseqData = readRDS(gzcon(url('https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/exampleData.RDS')))
@@ -49,19 +59,17 @@ pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
 ElbowPlot(pbmc)
 
 # 建立鄰近圖、群集及 UMAP 可視化
-pbmc <- FindNeighbors(pbmc, dims = 1:10)
+pbmc <- FindNeighbors(pbmc, dims = 1:40, k.param = 10)
 pbmc <- FindClusters(pbmc, resolution = 0.8)
-pbmc <- RunUMAP(pbmc, dims = 1:10)
+pbmc <- RunUMAP(pbmc, dims = 1:40)
 DimPlot(pbmc, reduction = "umap")
 
 #===========================================
 # 4. 使用 sc-type 對 PBMC 資料進行細胞型態打分與註釋
 #===========================================
-# 載入完整資料庫檔案 (ScTypeDB_full.xlsx) 與設定組織類型
+# 載入完整資料庫檔案 (ScTypeDB_full.xlsx) 與設定組織類型（使用 command line 參數 tissue）
 db_ = "https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/master/ScTypeDB_full.xlsx"
-tissue = "Immune system"  # 可根據需求更改為其他組織 (如 Pancreas、Liver 等)
-
-# 取得基因集
+# tissue 參數已從 command line 讀入
 gs_list = gene_sets_prepare(db_, tissue)
 
 # 取得 Seurat 物件中 RNA 資料經縮放後的矩陣
@@ -95,7 +103,6 @@ for(j in unique(sctype_scores$cluster)){
 #===========================================
 # 5. 自訂顏色並將 UMAP 圖依據自訂 mapping 進行上色
 #===========================================
-# 定義自訂顏色對應 (請注意名稱需與 customclassif 中一致)
 custom_colors <- c(
   "Naive B cells" = "red", 
   "Non-classical monocytes" = "black", 
@@ -133,46 +140,24 @@ custom_colors <- c(
   "Immature B cells" = "darkgoldenrod"
 )
 
-# 使用 DimPlot 並利用 cols 參數依據 customclassif 上色
 DimPlot(pbmc, reduction = "umap", label = TRUE, repel = TRUE, 
         group.by = 'customclassif', cols = custom_colors)
 
 #===========================================
 # 6. 建立條碼與細胞型態對應表並儲存 (CSV 與 TSV)
 #===========================================
-# 讀取條碼檔案 (請根據您的檔案格式確認分隔符與欄位名稱)
 barcodes <- read.table("/Group16T/common/lcy/dslab_lcy/GitRepo/B2SC/raw_gene_bc_matrices/hg19/barcodes.tsv", 
                        header = TRUE, sep = "\t")
-
-# 取得 Seurat 物件的條碼 (假設每個細胞的條碼為 rownames)
 seurat_barcodes <- rownames(pbmc)
-
-# 驗證所有條碼是否包含於 Seurat 物件中
 print(all(barcodes$barcodes %in% seurat_barcodes))
 
-# 建立條碼與細胞型態的對應表
 mapping <- data.frame(
   Barcode = rownames(pbmc@meta.data),
   CellType = pbmc@meta.data$customclassif
 )
-
-# 檢查對應表前幾列
 print(head(mapping))
 
-# 儲存為 CSV 檔案
 write.table(mapping, file = "/Group16T/common/lcy/dslab_lcy/GitRepo/B2SC/raw_gene_bc_matrices/hg19/barcode_to_celltype.csv", 
             sep = ",", row.names = FALSE, quote = FALSE)
-# 或儲存為 TSV 檔案
 write.table(mapping, file = "/Group16T/common/lcy/dslab_lcy/GitRepo/B2SC/raw_gene_bc_matrices/hg19/barcode_to_celltype.tsv", 
             sep = "\t", row.names = FALSE, quote = FALSE)
-
-#===========================================
-# 7. 補充說明
-#===========================================
-# (1) Rplots.pdf 的產生：
-#     若您在非互動式環境 (例如從 Rscript 執行) 中繪圖，R 會自動啟用預設的 PDF 裝置將圖形輸出至 Rplots.pdf。
-#     若不希望產生此檔案，您可以在繪圖後呼叫 dev.off() 或使用互動式環境 (如 RStudio)。
-#
-# (2) UMAP 顏色自訂：
-#     在 DimPlot 函數中利用 cols 參數傳入命名向量，即可依據 customclassif 的標籤上色，
-#     請確保 custom_colors 中的名稱與 Seurat 物件 meta.data 中 customclassif 的標籤一致。
