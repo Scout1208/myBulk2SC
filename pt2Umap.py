@@ -1,14 +1,24 @@
+import argparse  # [MODIFIED] 新增命令列參數解析
 import torch
 import pandas as pd
 import scanpy as sc
-from utils import get_celltype2int_dict, get_colormap  # 確保 utils.py 中有這些函數
+from utils import get_tissue_mapping_dict, get_colormap  # [MODIFIED] 改用 get_tissue_mapping_dict
 import numpy as np
+import louvain
+import igraph
+
+# [MODIFIED] 解析命令列參數，指定 tissue type，預設為 "Immune"
+parser = argparse.ArgumentParser(description="Specify tissue type for UMAP generation")
+parser.add_argument("tissue", type=str, nargs="?", default="Immune", help="Tissue type: Immune, Liver, or Leiden")
+args = parser.parse_args()
+tissue = args.tissue
+print(f"Using tissue type: {tissue}")
 
 # 1. 讀取儲存的 cell type 標籤
 sampled_celltypes = torch.load("saved_files/PBMC_real/sampled_celltypes.pt")
 
-# 取得細胞類型對應表（假設 get_celltype2int_dict() 回傳字典）
-mapping_dict = get_celltype2int_dict()
+# [MODIFIED] 取得對應 tissue 的 mapping dict
+mapping_dict = get_tissue_mapping_dict(tissue, as_string=False)
 int_to_celltype = {v: k for k, v in mapping_dict.items()}  # 建立反向對應
 
 # 2. 將數字標籤轉換成細胞類型名稱
@@ -35,21 +45,23 @@ adata_generated = adata_generated[adata_generated.X.sum(axis=1) > 0, :]
 # 6. 執行數據前處理與降維 (Normalization, log1p, PCA, UMAP)
 sc.pp.normalize_total(adata_generated, target_sum=1e4)
 sc.pp.log1p(adata_generated)
-sc.pp.pca(adata_generated)
-sc.pp.neighbors(adata_generated)
+sc.pp.highly_variable_genes(adata_generated, n_top_genes=2000, subset=True)
+sc.pp.scale(adata_generated, max_value=10)
+sc.pp.pca(adata_generated, svd_solver='arpack')
+sc.pp.neighbors(adata_generated, n_neighbors=10, n_pcs=40)
+# sc.tl.leiden(adata_generated, resolution=0.8)
+sc.tl.louvain(adata_generated, resolution=0.8) #scType
 sc.tl.umap(adata_generated)
 
-# 7. 設定調色盤，使得 UMAP 圖符合原始 color_map
-# 取得資料中實際出現的細胞類型
+# 7. 設定調色盤，使得 UMAP 圖符合對應 tissue 的 color map
 present_types = adata_generated.obs['cell_type'].unique().tolist()
 
-# 過濾 color_map，只保留出現的細胞類型顏色
-filtered_palette = [get_colormap()[ct] for ct in present_types]
+# [MODIFIED] 根據 tissue 取得對應 color map，並過濾只保留出現的細胞類型顏色
+cmap = get_colormap(tissue)
+filtered_palette = [cmap[ct] for ct in present_types if ct in cmap]
 
-# 將 cell_type 設定為 categorical 並只包含出現的細胞類型
 adata_generated.obs['cell_type'] = pd.Categorical(adata_generated.obs['cell_type'], categories=present_types)
 
-# 畫 UMAP 時傳入 filtered_palette
 sc.pl.umap(adata_generated, color='cell_type', title="Generated scRNA-seq Data", palette=filtered_palette, save="_generated.png")
 
-print("✅ 已生成 `figures/umap_generated.png` 🎉")
+print("✅ 已生成 `saved_files/PBMC_real/umap_generated.png` 🎉")
