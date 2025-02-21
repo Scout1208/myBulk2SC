@@ -57,7 +57,6 @@ def train_model_GMVAE(max_epochs,
             losses.append(total_loss)
  
 
-
 # Train BulkEncoder. Refer to train_bulkEncoder.py for the implementation and model checkpoint path.
 def train_model_BulkEncoder(max_epochs,
                             dataloader,
@@ -121,12 +120,14 @@ def train_model_BulkEncoder(max_epochs,
 
 
 if __name__=="__main__":
+    # [MODIFIED] 現在 tissue type 可從 command line 傳入，例如：python main.py Immune
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Using device: {device}')
     ############################ 0. Prepare args
     data_dir = "/Group16T/common/lcy/dslab_lcy/GitRepo/B2SC/raw_gene_bc_matrices/hg19/"
     barcode_path = data_dir+'barcode_to_celltype.csv'
-    args = configure(data_dir, barcode_path)
+    # tissue type 將由 utils.configure() 中解析
+    args = configure(data_dir, barcode_path)  # [MODIFIED]
 
     ############################ 1. Train GMVAE for scMu and scLogVar.
     input_dim = args.input_dim
@@ -158,14 +159,13 @@ if __name__=="__main__":
     from generate import generate
 
     num_cells = args.num_cells
-    GMVAE_model = GMVAE_model = GaussianMixtureVAE(input_dim, hidden_dim, latent_dim, K)
+    GMVAE_model = GaussianMixtureVAE(input_dim, hidden_dim, latent_dim, K)
     bulkEncoder_model = bulkEncoder(input_dim, hidden_dim, latent_dim, K)
     
     encoder_state_dict = torch.load("saved_files/bulkEncoder_model.pt")
     gmvae_state_dict = torch.load("saved_files/GMVAE_model.pt")
 
     bulkEncoder_model.load_state_dict(encoder_state_dict, strict=True)
-
 
     GMVAE_model = nn.DataParallel(GMVAE_model)
 
@@ -175,6 +175,3 @@ if __name__=="__main__":
 
     # generate(bulkEncoder_model, GMVAE_model, args.dataloader, num_cells, args.mapping_dict, args.color_map, device=device) raw version
     generate(bulkEncoder_model, GMVAE_model, args.dataloader, num_cells, args.mapping_dict, args.reverse_mapping, args.color_map, device=device)
-
-
-
