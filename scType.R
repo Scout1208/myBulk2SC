@@ -37,7 +37,7 @@ print(head(es.max))
 # 3. 使用 PBMC 資料進行分析
 #===========================================
 # 載入 10X Genomics PBMC 資料 (請根據您的實際路徑調整 data.dir)
-pbmc.data <- Read10X(data.dir = "/Group16T/common/lcy/dslab_lcy/GitRepo/B2SC/raw_gene_bc_matrices/hg19/")
+pbmc.data <- Read10X(data.dir = "/Group16T/common/lcy/dslab_lcy/GitRepo/myBulk2SC/raw_gene_bc_matrices/hg19/")
 
 # 建立 Seurat 物件 (設定 min.cells 與 min.features)
 pbmc <- CreateSeuratObject(counts = pbmc.data, project = "pbmc1k", min.cells = 3, min.features = 200)
@@ -140,17 +140,17 @@ EXTENDED_COLOR_MAPS <- list(
     'Immature B cells' = 'darkgoldenrod'
   ),
   Liver = c(
-    'Hepatocytes' = 'maroon',
-    'Cholangiocytes' = 'gold',
-    'Hepatic Stellate Cells' = 'olive',
-    'Kupffer Cells' = 'teal',
-    'Liver Sinusoidal Endothelial Cells' = 'navy',
-    'Portal Fibroblasts' = 'coral',
+    'Hepatocytes' = 'red',
+    'Cholangiocytes' = 'orange',
+    'Hepatic Stellate Cells' = 'yellow',
+    'Kupffer Cells' = 'green',
+    'Liver Sinusoidal Endothelial Cells' = 'blue',
+    'Portal Fibroblasts' = 'darkblue',
     'Central Vein Endothelial Cells' = 'purple',
     'Periportal Hepatocytes' = 'sienna',
     'Pericentral Hepatocytes' = 'chocolate',
     'Biliary Epithelial Cells' = 'peru',
-    'Liver Progenitor Cells' = 'crimson',
+    'Liver Progenitor Cells' = 'pink',
     'Unknown' = 'black'
   ),
   Leiden = c(
@@ -181,7 +181,7 @@ DimPlot(pbmc, reduction = "umap", label = TRUE, repel = TRUE,
 #===========================================
 # 6. 建立條碼與細胞型態對應表並儲存 (CSV 與 TSV)
 #===========================================
-barcodes <- read.table("/Group16T/common/lcy/dslab_lcy/GitRepo/B2SC/raw_gene_bc_matrices/hg19/barcodes.tsv", 
+barcodes <- read.table("/Group16T/common/lcy/dslab_lcy/GitRepo/myBulk2SC/raw_gene_bc_matrices/hg19/barcodes.tsv", 
                        header = TRUE, sep = "\t")
 seurat_barcodes <- rownames(pbmc)
 print(all(barcodes$barcodes %in% seurat_barcodes))
@@ -192,7 +192,7 @@ mapping <- data.frame(
 )
 print(head(mapping))
 
-write.table(mapping, file = "/Group16T/common/lcy/dslab_lcy/GitRepo/B2SC/raw_gene_bc_matrices/hg19/barcode_to_celltype.csv", 
+write.table(mapping, file = "/Group16T/common/lcy/dslab_lcy/GitRepo/myBulk2SC/raw_gene_bc_matrices/hg19/barcode_to_celltype.csv", 
             sep = ",", row.names = FALSE, quote = FALSE)
-write.table(mapping, file = "/Group16T/common/lcy/dslab_lcy/GitRepo/B2SC/raw_gene_bc_matrices/hg19/barcode_to_celltype.tsv", 
+write.table(mapping, file = "/Group16T/common/lcy/dslab_lcy/GitRepo/myBulk2SC/raw_gene_bc_matrices/hg19/barcode_to_celltype.tsv", 
             sep = "\t", row.names = FALSE, quote = FALSE)

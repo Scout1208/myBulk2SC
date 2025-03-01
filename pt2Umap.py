@@ -6,6 +6,15 @@ from utils import get_tissue_mapping_dict, get_colormap  # [MODIFIED] 改用 get
 import numpy as np
 import louvain
 import igraph
+import random
+
+# 固定隨機種子
+seed_value = 0
+np.random.seed(seed_value)
+random.seed(seed_value)
+sc.settings.seed = seed_value  # 一併設定 scanpy 的隨機種子
+
+sc.settings.figdir = "/Group16T/common/lcy/dslab_lcy/GitRepo/myBulk2SC/saved_files/PBMC_real_Leiden/"
 
 # [MODIFIED] 解析命令列參數，指定 tissue type，預設為 "Immune"
 parser = argparse.ArgumentParser(description="Specify tissue type for UMAP generation")
@@ -15,7 +24,7 @@ tissue = args.tissue
 print(f"Using tissue type: {tissue}")
 
 # 1. 讀取儲存的 cell type 標籤
-sampled_celltypes = torch.load("saved_files/PBMC_real/sampled_celltypes.pt")
+sampled_celltypes = torch.load("/Group16T/common/lcy/dslab_lcy/GitRepo/myBulk2SC/saved_files/PBMC_real_Leiden/sampled_celltypes.pt")
 
 # [MODIFIED] 取得對應 tissue 的 mapping dict
 mapping_dict = get_tissue_mapping_dict(tissue, as_string=False)
@@ -25,7 +34,7 @@ int_to_celltype = {v: k for k, v in mapping_dict.items()}  # 建立反向對應
 predicted_cell_types = [int_to_celltype[cell.item()] for cell in sampled_celltypes]
 
 # 3. 讀取生成的 scRNA-seq 數據
-generated_data = torch.load("saved_files/PBMC_real/generated_aggregate_tensor.pt")
+generated_data = torch.load("/Group16T/common/lcy/dslab_lcy/GitRepo/myBulk2SC/saved_files/PBMC_real_Leiden/generated_aggregate_tensor.pt")
 
 data_array = generated_data.detach().cpu().numpy()
 print("最小值:", np.min(data_array))
@@ -48,10 +57,10 @@ sc.pp.log1p(adata_generated)
 sc.pp.highly_variable_genes(adata_generated, n_top_genes=2000, subset=True)
 sc.pp.scale(adata_generated, max_value=10)
 sc.pp.pca(adata_generated, svd_solver='arpack')
-sc.pp.neighbors(adata_generated, n_neighbors=10, n_pcs=40)
-# sc.tl.leiden(adata_generated, resolution=0.8)
-sc.tl.louvain(adata_generated, resolution=0.8) #scType
-sc.tl.umap(adata_generated)
+sc.pp.neighbors(adata_generated, n_neighbors=10, n_pcs=40,random_state=0)
+sc.tl.leiden(adata_generated, resolution=0.8,random_state=0)
+# sc.tl.louvain(adata_generated, resolution=0.8) #scType
+sc.tl.umap(adata_generated,random_state=0)
 
 # 7. 設定調色盤，使得 UMAP 圖符合對應 tissue 的 color map
 present_types = adata_generated.obs['cell_type'].unique().tolist()
@@ -64,4 +73,5 @@ adata_generated.obs['cell_type'] = pd.Categorical(adata_generated.obs['cell_type
 
 sc.pl.umap(adata_generated, color='cell_type', title="Generated scRNA-seq Data", palette=filtered_palette, save="_generated.png")
 
-print("✅ 已生成 `saved_files/PBMC_real/umap_generated.png` 🎉")
+print("✅ 已生成 `/Group16T/common/lcy/dslab_lcy/GitRepo/myBulk2SC/saved_files/PBMC_real_Leiden/umap_generated.png` 🎉")
+adata_generated.write('/Group16T/common/lcy/dslab_lcy/GitRepo/myBulk2SC/saved_files/PBMC_real_Leiden/adata_preprocessed_Leiden.h5ad')

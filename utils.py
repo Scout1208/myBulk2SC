@@ -83,17 +83,18 @@ EXTENDED_COLOR_MAPS = {
         'Pro-B cells': 'darkorange', 'Immature B cells': 'darkgoldenrod'
     },
     "Liver": {
-        'Hepatocytes': 'maroon',
-        'Cholangiocytes': 'gold',
-        'Hepatic Stellate Cells': 'olive',
-        'Kupffer Cells': 'teal',
-        'Liver Sinusoidal Endothelial Cells': 'navy',
-        'Portal Fibroblasts': 'coral',
+        'Hepatocytes': 'red',
+        'Cholangiocytes': 'orange',
+        'Hepatic Stellate Cells': 'yellow',
+        'Kupffer Cells': 'green',
+        'Portal Fibroblasts': 'darkblue',
+        'Liver Sinusoidal Endothelial Cells': 'blue',
         'Central Vein Endothelial Cells': 'purple',
         'Periportal Hepatocytes': 'sienna',
         'Pericentral Hepatocytes': 'chocolate',
         'Biliary Epithelial Cells': 'peru',
-        'Liver Progenitor Cells': 'crimson'
+        'Liver Progenitor Cells': 'pink',
+        'Unknown': 'black'
     },
     "Leiden": {
         str(i): color for i, color in zip(range(31), [
@@ -151,18 +152,25 @@ def load_data(data_dir, barcode_path, tissue="Immune"):
     # 建立原始 mapping（可能非連續，例如可能有 0, 5, 6, 12）
     label_to_int = {}
     max_int_label = -1
+
     for label in labels.unique():
-        if label.isdigit():
-            int_val = int(label)
-            label_to_int[label] = int_val
+        # 先轉成字串
+        label_str = str(label)
+        
+        if label_str.isdigit():
+            # 若可以轉成整數，就取其 int 值
+            int_val = int(label_str)
+            label_to_int[label_str] = int_val
             max_int_label = max(max_int_label, int_val)
         else:
-            if label not in label_to_int:
+            # 否則就視為新的字串標籤
+            if label_str not in label_to_int:
                 max_int_label += 1
-                label_to_int[label] = max_int_label
+                label_to_int[label_str] = max_int_label
 
-    # 將文字標籤轉成對應整數
-    int_labels = labels.map(label_to_int)
+    # 然後在把整個 labels 轉成 int_labels
+    int_labels = labels.map(lambda x: label_to_int[str(x)])
+
 
     # 重新映射，讓標籤連續從 0 到 (num_unique-1)
     unique_labels = sorted(int_labels.unique())
